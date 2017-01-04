@@ -45,49 +45,48 @@ void map_save (char *filename)
   // TODO
   //fprintf (stderr, "Sorry: Map save is not yet implemented\n");
   //En premier lieu incrit les infos générales de la carte
-  FILE* fdmap = fopen(filename, "w+");
-  unsigned width = map_width();
-  unsigned height = map_height();
-  unsigned nb_obj = map_objects();
-  fwrite(&width, sizeof(width), 1, fdmap);
-  fwrite(&height, sizeof(height), 1, fdmap);
-  fwrite(&nb_obj, sizeof(nb_obj), 1, fdmap);
+  int fdmap = open(filename, O_WRONLY | O_TRUNC |O_CREAT, 0640);
+  int width = map_width();
+  int height = map_height();
+  int nb_obj = map_objects();
+  write(fdmap, &width, sizeof(int));
+  write(fdmap, &height, sizeof(int));
+  write(fdmap, &nb_obj, sizeof(int));
 
   //Puis on cherche chaque objets existant pour les enregistrer.
-  int name_size, solidity, is_destruct, is_collect, is_gen;
-  unsigned nb_frames;
-  char *name_obj;
-  for(int x = 0; x < width ; ++x){
-    for(int y = 0; y < height; ++y){
-      int obj = map_get(x, y);
-      if(obj != MAP_OBJECT_NONE){
-	name_size = strlen(map_get_name(obj));
-	name_obj = malloc (name_size * sizeof(char));
-	strcpy (name_obj, map_get_name(obj));
-	
-	nb_frames = map_get_frames(obj);
-	solidity = map_get_solidity(obj);
-	is_destruct = map_is_destructible(obj);
-	is_collect = map_is_collectible(obj);
-	is_gen = map_is_generator(obj);
-	
-	fwrite(&obj, sizeof(obj), 1, fdmap);
-	fwrite(&x, sizeof(x), 1, fdmap);
-	fwrite(&y, sizeof(y), 1, fdmap);
-	fwrite(&name_size, sizeof(name_size), 1, fdmap);
-	fwrite(&name_obj, sizeof(char), name_size,fdmap);
-	fwrite(&nb_frames, sizeof(nb_frames), 1, fdmap);
-	fwrite(&solidity, sizeof(solidity), 1, fdmap);
-	fwrite(&is_destruct, sizeof(is_destruct), 1, fdmap);
-	fwrite(&is_collect, sizeof(is_collect), 1, fdmap);
-	fwrite(&is_gen, sizeof(is_gen), 1, fdmap);
-	
-	free(name_obj);
-	}
+  int obj, solidity, is_destruct, is_collect, is_gen, nb_frames;
+  
+  for(int y = 0; y < height; ++y){
+    for(int x = 0; x < width; ++x){
+      obj = map_get(x, y);
+      write(fdmap, &obj, sizeof(obj));
     }
   }
+
+  //Enfin, on mémorise les propriétés des objets
+  for(int i = 0; i < nb_obj; ++i){
+    char *name_obj = map_get_name(i);
+    int name_len = 0;
+    while(name_obj[name_len] != '\0'){
+      name_len++;
+    }
+    name_len++;
+    nb_frames = map_get_frames(i);
+    solidity = map_get_solidity(i);
+    is_destruct = map_is_destructible(i) * MAP_OBJECT_DESTRUCTIBLE;
+    is_collect = map_is_collectible(i) * MAP_OBJECT_COLLECTIBLE;
+    is_gen = map_is_generator(i) * MAP_OBJECT_GENERATOR;
+    
+    write(fdmap, &name_len, sizeof(int));
+    write(fdmap, name_obj, (name_len*sizeof(char)));
+    write(fdmap, &nb_frames, sizeof(int));
+    write(fdmap, &solidity, sizeof(int));
+    write(fdmap, &is_destruct, sizeof(int));
+    write(fdmap, &is_collect, sizeof(int));
+    write(fdmap, &is_gen, sizeof(int));
+  }
   
-  fclose(fdmap);
+  close(fdmap);
   printf("Map successfully saved at: %s.\n", filename);
 }
 
@@ -95,44 +94,43 @@ void map_load (char *filename)
 {
   // TODO
   //exit_with_error ("Map load is not yet implemented\n");
-  unsigned width, height, nb_obj, nb_frames;
-  int obj, x, y,  name_size, solidity, is_destruct, is_collect, is_gen;
-  char *name_obj;
+  int width, height, nb_obj, nb_frames, obj, name_len, solidity, destruct, collect, gen;
 
-  FILE* fdmap = fopen(filename, "w+");
-  fread(&width, sizeof(width), 1, fdmap);
-  fread(&height, sizeof(height), 1, fdmap);
-  fread(&nb_obj, sizeof(nb_obj), 1, fdmap);
-
-  map_allocate(width, height);
-  map_object_begin(nb_obj);
-
-  //Puis on cherche chaque objets existant pour les enregistrer.
-  for(int i = 0; i < nb_obj; ++i){
-    fread(&name_size, sizeof(name_size), 1, fdmap);
-    name_obj = malloc (name_size * sizeof(char));
-    fread(&name_obj, sizeof(char), name_size, fdmap);
-    
-    /*nb_frames = map_get_frames(obj);
-    solidity = map_get_solidity(obj);
-    is_destruct = map_is_destructible(obj);
-    is_collect = map_is_collectible(obj);
-    is_gen = map_is_generator(obj);*/
-    
-    fread(&obj, sizeof(obj), 1, fdmap);
-    fread(&x, sizeof(x), 1, fdmap);
-    fread(&y, sizeof(y), 1, fdmap);
-    fread(&name_size, sizeof(name_size), 1, fdmap);
-    fread(&name_obj, sizeof(char), name_size,fdmap);
-    fread(&nb_frames, sizeof(nb_frames), 1, fdmap);
-    fread(&solidity, sizeof(solidity), 1, fdmap);
-    fread(&is_destruct, sizeof(is_destruct), 1, fdmap);
-    fread(&is_collect, sizeof(is_collect), 1, fdmap);
-    fread(&is_gen, sizeof(is_gen), 1, fdmap);
-    
+  int fdmap = open(filename, O_RDONLY);
+  if(fdmap==-1){
+    exit_with_error("Impossible d'ouvrir le fichier\n");
   }
   
-  fclose(fdmap);
+  read(fdmap, &width, sizeof(int));
+  read(fdmap, &height, sizeof(int));
+  read(fdmap, &nb_obj, sizeof(int));
+
+  map_allocate(width, height);
+  //On définit chaque case
+  for(int y = 0; y < height ; ++y){
+    for(int x = 0; x < width; ++x){
+      read(fdmap, &obj, sizeof(int));
+      map_set(x, y, obj);
+    }
+  }
+  
+  map_object_begin(nb_obj);
+
+  //Puis on définit chaque objets.
+  for(int i = 0; i < nb_obj; ++i){
+    read(fdmap, &name_len, sizeof(int));
+    char name_obj[name_len];
+    read(fdmap, name_obj, (name_len*sizeof(char)));
+    read(fdmap, &nb_frames, sizeof(int));
+    read(fdmap, &solidity, sizeof(int));
+    read(fdmap, &destruct, sizeof(int));
+    read(fdmap, &collect, sizeof(int));
+    read(fdmap, &gen, sizeof(int));
+    map_object_add(name_obj, nb_frames, solidity | destruct | collect | gen);
+  }
+
+  map_object_end();
+  close(fdmap);
   printf("Map successfully loaded.\n");
 }
 

@@ -75,7 +75,7 @@ void map_save (char *filename)
 	fwrite(&x, sizeof(x), 1, fdmap);
 	fwrite(&y, sizeof(y), 1, fdmap);
 	fwrite(&name_size, sizeof(name_size), 1, fdmap);
-	fwrite(&name_obj, sizeof(name_obj), name_size,fdmap);
+	fwrite(&name_obj, sizeof(char), name_size,fdmap);
 	fwrite(&nb_frames, sizeof(nb_frames), 1, fdmap);
 	fwrite(&solidity, sizeof(solidity), 1, fdmap);
 	fwrite(&is_destruct, sizeof(is_destruct), 1, fdmap);
@@ -94,7 +94,46 @@ void map_save (char *filename)
 void map_load (char *filename)
 {
   // TODO
-  exit_with_error ("Map load is not yet implemented\n");
+  //exit_with_error ("Map load is not yet implemented\n");
+  unsigned width, height, nb_obj, nb_frames;
+  int obj, x, y,  name_size, solidity, is_destruct, is_collect, is_gen;
+  char *name_obj;
+
+  FILE* fdmap = fopen(filename, "w+");
+  fread(&width, sizeof(width), 1, fdmap);
+  fread(&height, sizeof(height), 1, fdmap);
+  fread(&nb_obj, sizeof(nb_obj), 1, fdmap);
+
+  map_allocate(width, height);
+  map_object_begin(nb_obj);
+
+  //Puis on cherche chaque objets existant pour les enregistrer.
+  for(int i = 0; i < nb_obj; ++i){
+    fread(&name_size, sizeof(name_size), 1, fdmap);
+    name_obj = malloc (name_size * sizeof(char));
+    fread(&name_obj, sizeof(char), name_size, fdmap);
+    
+    /*nb_frames = map_get_frames(obj);
+    solidity = map_get_solidity(obj);
+    is_destruct = map_is_destructible(obj);
+    is_collect = map_is_collectible(obj);
+    is_gen = map_is_generator(obj);*/
+    
+    fread(&obj, sizeof(obj), 1, fdmap);
+    fread(&x, sizeof(x), 1, fdmap);
+    fread(&y, sizeof(y), 1, fdmap);
+    fread(&name_size, sizeof(name_size), 1, fdmap);
+    fread(&name_obj, sizeof(char), name_size,fdmap);
+    fread(&nb_frames, sizeof(nb_frames), 1, fdmap);
+    fread(&solidity, sizeof(solidity), 1, fdmap);
+    fread(&is_destruct, sizeof(is_destruct), 1, fdmap);
+    fread(&is_collect, sizeof(is_collect), 1, fdmap);
+    fread(&is_gen, sizeof(is_gen), 1, fdmap);
+    
+  }
+  
+  fclose(fdmap);
+  printf("Map successfully loaded.\n");
 }
 
 #endif

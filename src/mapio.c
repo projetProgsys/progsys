@@ -43,7 +43,52 @@ void map_new (unsigned width, unsigned height)
 void map_save (char *filename)
 {
   // TODO
-  fprintf (stderr, "Sorry: Map save is not yet implemented\n");
+  //fprintf (stderr, "Sorry: Map save is not yet implemented\n");
+  //En premier lieu incrit les infos générales de la carte
+  FILE* fdmap = fopen(filename, "w+");
+  unsigned width = map_width();
+  unsigned height = map_height();
+  unsigned nb_obj = map_objects();
+  fwrite(&width, sizeof(width), 1, fdmap);
+  fwrite(&height, sizeof(height), 1, fdmap);
+  fwrite(&nb_obj, sizeof(nb_obj), 1, fdmap);
+
+  //Puis on cherche chaque objets existant pour les enregistrer.
+  int name_size, solidity, is_destruct, is_collect, is_gen;
+  unsigned nb_frames;
+  char *name_obj;
+  for(int x = 0; x < width ; ++x){
+    for(int y = 0; y < height; ++y){
+      int obj = map_get(x, y);
+      if(obj != MAP_OBJECT_NONE){
+	name_size = strlen(map_get_name(obj));
+	name_obj = malloc (name_size * sizeof(char));
+	strcpy (name_obj, map_get_name(obj));
+	
+	nb_frames = map_get_frames(obj);
+	solidity = map_get_solidity(obj);
+	is_destruct = map_is_destructible(obj);
+	is_collect = map_is_collectible(obj);
+	is_gen = map_is_generator(obj);
+	
+	fwrite(&obj, sizeof(obj), 1, fdmap);
+	fwrite(&x, sizeof(x), 1, fdmap);
+	fwrite(&y, sizeof(y), 1, fdmap);
+	fwrite(&name_size, sizeof(name_size), 1, fdmap);
+	fwrite(&name_obj, sizeof(name_obj), name_size,fdmap);
+	fwrite(&nb_frames, sizeof(nb_frames), 1, fdmap);
+	fwrite(&solidity, sizeof(solidity), 1, fdmap);
+	fwrite(&is_destruct, sizeof(is_destruct), 1, fdmap);
+	fwrite(&is_collect, sizeof(is_collect), 1, fdmap);
+	fwrite(&is_gen, sizeof(is_gen), 1, fdmap);
+	
+	free(name_obj);
+	}
+    }
+  }
+  
+  fclose(fdmap);
+  printf("Map successfully saved at: %s.\n", filename);
 }
 
 void map_load (char *filename)

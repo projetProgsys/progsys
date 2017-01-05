@@ -70,7 +70,8 @@ void next_event(event** first, event** new_event){
 **/
 void suppr_event(event* old_event){
 	if (first  == NULL){
-		printf("Impossible: empty row");
+		perror("Impossible: empty row");
+		exit(EXIT_FAILURE);
 	}
 	else{
 		struct event *tmp = old_event;

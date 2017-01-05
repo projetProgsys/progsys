@@ -47,7 +47,7 @@ struct event *first = NULL;
 * Create a new event
 *@param first, the first event of the row
 *@param new_event, the event to be added
-**//*
+**/
 void next_event(event** first, event** new_event){
 	if (*first == NULL){
 		*first = *new_event;
@@ -63,11 +63,11 @@ void next_event(event** first, event** new_event){
 	tmp->next = *new_event;
 	free(tmp);
 }
-   */
+   
 /**
 * Delete one event the first event of the row
 *@param void
-**//*
+**/
 void suppr_event(event* old_event){
 	if (first  == NULL){
 		printf("Impossible: empty row");
@@ -81,7 +81,7 @@ void suppr_event(event* old_event){
 		free(tmp);
 	}
 }
-*/
+
 
 /**
 * the signal handler

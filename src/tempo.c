@@ -88,8 +88,8 @@ void suppr_event(event* old_event){
 *@param sig, the signal
 **/
 void sig_handler(int sig){
-  //printf("sdl_push_event(%p) appelée au temps %ld\n", *param, get_time ());
-  printf("Thread appelé n°%d\n",(int) pthread_self());
+  printf("sdl_push_event(%p) appelée au temps %ld\n", first->param, get_time ());
+  //printf("Thread appelé n°%d\n",(int) pthread_self());
 }
 
 /**

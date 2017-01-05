@@ -33,49 +33,84 @@ pthread_mutex_t mutex; // permet de bloquer la réception de SIGALRM par les aut
 /**
 * The structure of one event
 **/
-struct event{
+
+typedef struct event{
 	void *param; // l'evenement
 	struct itimerval time; // le delay avant action en µs
 	struct event *next; // l'évemenet suivant
 	struct event *previous; // l'évènement précédent
-}
+} event;
 
-static event *first.previous = NULL; // pour le première évènement, le prédécesseur est vide
+struct event *first = NULL;
 
 /**
 * Create a new event
 *@param first, the first event of the row
 *@param new_event, the event to be added
-**/
-void next_event(event **first, event **new_event){
+**//*
+void next_event(event** first, event** new_event){
 	if (*first == NULL){
 		*first = *new_event;
 		(*first)->next = NULL;
+		(*first)->previous = NULL;
 	}
 	event *tmp = *first;
 	while(tmp->next != NULL){
-		tmp = tmp -> next;
+	  tmp = tmp->next;
 	}
 	(*new_event)-> next = NULL;
 	(*new_event)->next = (tmp->next);
 	tmp->next = *new_event;
 	free(tmp);
 }
+   */
 /**
-* Delete the first event of the row
+* Delete one event the first event of the row
 *@param void
-**/
-void suppr_event(void){
-	if (*first == NULL){
+**//*
+void suppr_event(event* old_event){
+	if (first  == NULL){
 		printf("Impossible: empty row");
 	}
 	else{
-		struct event *tmp = *first;
+		struct event *tmp = old_event;
 		while (tmp->next != NULL){
 			tmp = tmp->next;
 		}
 		tmp->next = NULL;
 		free(tmp);
+	}
+}
+*/
+
+/**
+* the signal handler
+*@param sig, the signal
+**/
+void sig_handler(int sig){
+  //printf("sdl_push_event(%p) appelée au temps %ld\n", *param, get_time ());
+  printf("Thread appelé n°%d\n",(int) pthread_self());
+}
+
+/**
+*daemon thread
+*@param 
+**/
+void *daemon(void *param){
+
+	struct sigaction s;
+	s.sa_handler = sig_handler;
+	sigemptyset(&s.sa_mask);
+	sigaddset(&s.sa_mask, SIGALRM);
+	sigaction(SIGALRM, &s, NULL);
+
+	sigset_t mask;
+	sigfillset(&mask);
+	sigdelset(&mask, SIGALRM);
+	s.sa_flags = 0;
+
+	while (1){
+		sigsuspend(&mask);
 	}
 }
 
@@ -95,43 +130,12 @@ int timer_init (void)
 
 	// Le thread et creation
 	pthread_t thread;
-	if (pthred_create (&thread, NULL, demon, NULL) !=0):{
+	if (pthread_create(&thread, NULL, &daemon, NULL) !=0){
 		perror("thread init error");
 		exit(EXIT_FAILURE);
 	}
 		
  	return 0; // Implementation not ready
-}
-
-/**
-*daemon thread
-*@param 
-**/
-void *demon(void *param){
-
-	struct sigaction s;
-	s.sa_handler = sig_handler;
-	sigemptyset(&s.sa_mask);
-	sigaddset(&s.sa_mask, SIGALRM);
-	sigaction(SIGALRM, &s, NULL);
-
-	sigset_t mask;
-	sigfillset(&mask);
-	sigdelset(&mask, SIGALRM);
-	s.sa_flags = 0;
-
-	while (1):{
-		sigsuspend(&mask);
-		pthread_self();
-	}
-}
-
-/**
-* the signal handler
-*@param sig, the signal
-**/
-void sig_handler(int sig){
-	printf("sdl_push_event(%p) appelée au temps %ld\n", param, get_time ());
 }
 
 /**
@@ -141,18 +145,21 @@ void sig_handler(int sig){
 **/
 void timer_set (Uint32 delay, void *param)
 {
-	//sdl_push_event(*param) -> usage
-	//TODO
-	/*unsigned long delay_µs = (unsigned long) delay * 1000; // delay in µs
+	unsigned long delay_us = (unsigned long) delay * 1000; // delay in µs
+	unsigned long delay_s = (unsigned long) delay%1000 * 1000; // delay in s
 	unsigned long trigger = (unsigned long) delay * 1000 + get_time(); // how long before event
-	now = (unsigned long)get_time();
+	
 	printf("Time before triggering:%ld µs\n", trigger);
-	struct event new_event = malloc(sizeof(struct event));
-	new_event(NULL, new_event);
+
+	struct event *new_event = malloc(sizeof(event));
 	new_event->param = param;
-	new_event->time = delay_µs;*/
+	new_event->time.it_value.tv_sec = delay_s;
+	new_event->time.it_value.tv_usec = delay_us;
+	new_event->time.it_interval.tv_sec = 0;
+	new_event->time.it_interval.tv_usec = 0;
 
-
+	setitimer(ITIMER_REAL, &new_event->time, NULL);
 }
+
 
 #endif

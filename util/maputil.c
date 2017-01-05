@@ -61,12 +61,12 @@ void get_info(char *filename){
 }
 
 void replace_content(int dst, int src){
-  char buf[4096];
+  char buf[1000];
   int r;
   int data;
   lseek(src, 0, SEEK_SET);
   lseek(dst, 0, SEEK_SET);
-  while((r = read(src, buf, 4096)) > 0){
+  while((r = read(src, buf, 1000)) > 0){
     write(dst, buf, r);
     data+=r;
   }
@@ -109,9 +109,9 @@ void set_width(char *filename, int new_w){
 	}
       }
     }
-    char buf[4096];
+    char buf[1000];
     int r;
-    while((r = read(fd, buf, 4096)) > 0){
+    while((r = read(fd, buf, 1000)) > 0){
       write(tmp, buf, r);
     }
   }

@@ -109,9 +109,9 @@ void set_width(char *filename, int new_w){
 	}
       }
     }
-    char buf[4096];
+    char buf[1000];
     int r;
-    while((r = read(fd, buf, 4096)) > 0){
+    while((r = read(fd, buf, 1000)) > 0){
       write(tmp, buf, r);
     }
   }

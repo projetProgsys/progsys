@@ -28,17 +28,17 @@ static unsigned long get_time (void)
 
 #ifdef PADAWAN
 
-pthread_mutex_t mutex; // permet de bloquer la réception de SIGALRM par les autres threads
+pthread_mutex_t mutex;
 
 /**
 * The structure of one event
 **/
 
 typedef struct event{
-	void *param; // l'evenement
-	struct itimerval time; // le delay avant action en µs
-	struct event *next; // l'évemenet suivant
-	struct event *previous; // l'évènement précédent
+	void *param;
+	struct itimerval time;
+	struct event *next;
+	struct event *previous;
 } event;
 
 struct event *first = NULL;
@@ -124,12 +124,10 @@ int timer_init (void)
 	sigset_t mask;
 	sigemptyset(&mask);
 	sigaddset(&mask, SIGALRM);
-	pthread_sigmask(SIG_BLOCK, &mask, NULL); // Bloque le signal pour les autres threads
+	pthread_sigmask(SIG_BLOCK, &mask, NULL);
 
-	// Verrou
 	pthread_mutex_init(&mutex, NULL);
-
-	// Le thread et creation
+	
 	pthread_t thread;
 	if (pthread_create(&thread, NULL, &daemon, NULL) !=0){
 		perror("thread init error");
@@ -146,9 +144,9 @@ int timer_init (void)
 **/
 void timer_set (Uint32 delay, void *param)
 {
-	unsigned long delay_us = (unsigned long) delay * 1000; // delay in µs
-	unsigned long delay_s = (unsigned long) delay%1000 * 1000; // delay in s
-	unsigned long trigger = (unsigned long) delay * 1000 + get_time(); // how long before event
+	unsigned long delay_us = (unsigned long) delay * 1000; 
+	unsigned long delay_s = (unsigned long) delay%1000 * 1000; s
+	unsigned long trigger = (unsigned long) delay * 1000 + get_time(); 
 	
 	printf("Time before triggering:%ld µs\n", trigger);
 

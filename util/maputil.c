@@ -1,4 +1,4 @@
-#define _XOPEN_SOURCE 500
+#define _XOPEN_SOURCE 600
 #include <fcntl.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -75,21 +75,29 @@ void replace_content(int dst, int src){
 
 void set_width(char *filename, int new_w){
   int fd = open(filename, O_RDWR);
-  int tmp = open("tmp.map", O_RDWR| O_CREAT);
-  if(fd==-1 || tmp==-1){
+  if(fd==-1){
     fprintf(stderr, "Erreur ouverture du fichier\n");
     exit(1);
   }
-  
   int old_w, old_h, nb_items, buf_int;
   int map_none = -1;
   read(fd, &old_w, sizeof(int));
+  if(old_w == new_w){
+    close(fd);
+    fprintf(stderr, "Same width");
+    exit(1);
+  }
+  int tmp = open("tmp.map", O_RDWR | O_CREAT);
+  if(fd==-1){
+    fprintf(stderr, "Erreur ouverture du fichier\n");
+    exit(1);
+  }
   read(fd, &old_h, sizeof(int));
   write(tmp, &new_w, sizeof(int));
   write(tmp, &old_h, sizeof(int));
   read(fd, &nb_items, sizeof(int));
   write(tmp, &nb_items, sizeof(int));
-  //if(new_w > old_w){
+  if(new_w > old_w){
     for(int y = 0; y < old_h; ++y){
       for(int x = 0; x < new_w; ++x){
         if(x < old_w){
@@ -106,7 +114,7 @@ void set_width(char *filename, int new_w){
     while((r = read(fd, buf, 4096)) > 0){
       write(tmp, buf, r);
     }
-    //}
+  }
   replace_content(fd, tmp);
   close(fd);
   close(tmp);
@@ -114,7 +122,51 @@ void set_width(char *filename, int new_w){
 }
 
 void set_height(char *filename, int new_h){
-  //TODO
+  int fd = open(filename, O_RDWR);
+  if(fd==-1){
+    fprintf(stderr, "Erreur ouverture du fichier\n");
+    exit(1);
+  }
+  int old_w, old_h, nb_items, buf_int;
+  int map_none = -1;
+  read(fd, &old_w, sizeof(int));
+  if(old_h == new_h){
+    close(fd);
+    fprintf(stderr, "Same width");
+    exit(1);
+  }
+  int tmp = open("tmp.map", O_RDWR | O_CREAT);
+  if(fd==-1){
+    fprintf(stderr, "Erreur ouverture du fichier\n");
+    exit(1);
+  }
+  read(fd, &old_h, sizeof(int));
+  write(tmp, &new_w, sizeof(int));
+  write(tmp, &old_h, sizeof(int));
+  read(fd, &nb_items, sizeof(int));
+  write(tmp, &nb_items, sizeof(int));
+  if(new_h > old_h){
+    for(int y = 0; y < new_h; ++y){
+      for(int x = 0; x < old_w; ++x){
+        if(y < old_h){
+	  read(fd, &buf_int, sizeof(int));
+	  write(tmp, &buf_int, sizeof(int));
+	}
+	else{
+	  write(tmp, &map_none, sizeof(int));
+	}
+      }
+    }
+    char buf[4096];
+    int r;
+    while((r = read(fd, buf, 4096)) > 0){
+      write(tmp, buf, r);
+    }
+  }
+  replace_content(fd, tmp);
+  close(fd);
+  close(tmp);
+  remove("tmp.map");
 }
 
 int main(int argc, char *argv[]){
